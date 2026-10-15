@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Donut Client</title>
+<meta name="description" content="A DonutSMP client for Minecraft Java 26.2 with the GoNuts auction trading bot inside. $10 for a 2-month key.">
+<meta name="theme-color" content="#071112">
+<meta property="og:title" content="Donut Client">
+<meta property="og:description" content="Finders, X-ray and a built-in auction trading bot for DonutSMP. $10 for a 2-month key.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%235BE3C8' stroke-width='8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mint: #5be3c8;
+    --mint-soft: rgba(91, 227, 200, .12);
+    --mint-line: rgba(91, 227, 200, .35);
+    --bg: #071112;
+    --sidebar: #0a1718;
+    --card: #0c1a1b;
+    --card-hover: #102324;
+    --edge: #1b3031;
+    --edge-hover: #2a4646;
+    --field: #061011;
+    --track: #2a3d3e;
+    --text: #f0f6f5;
+    --label: #cad7d5;
+    --muted: #8ea3a1;
+    --dim: #748c8a;
+    --warn: #f2b35e;
+    --radius: 14px;
+    --max: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* Navigation */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(7, 17, 18, .82);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--edge);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 28px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.01em; }
+  .brand svg { width: 26px; height: 26px; }
+  .links { display: flex; gap: 24px; margin-left: auto; font-size: 15px; color: var(--muted); }
+  .links a:hover { color: var(--text); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; padding: 0 22px; border-radius: 12px;
+    font-weight: 700; font-size: 16px; border: 1px solid transparent;
+    transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-mint { background: var(--mint); color: #04201b; }
+  .btn-mint:hover { background: #7aebd5; }
+  .btn-ghost { border-color: var(--edge-hover); color: var(--label); }
+  .btn-ghost:hover { border-color: var(--mint-line); color: var(--text); }
+  .btn-sm { height: 38px; padding: 0 16px; font-size: 14px; border-radius: 10px; }
+  .btn[aria-disabled="true"] { background: var(--card-hover); color: var(--muted); border-color: var(--edge-hover); cursor: default; transform: none; }
+
+  /* Hero */
+  .hero { position: relative; padding: 88px 0 72px; }
+  .hero::before {
+    content: ""; position: absolute; inset: -120px 0 auto; height: 620px; z-index: -1;
+    background: radial-gradient(ellipse 60% 55% at 70% 30%, rgba(91, 227, 200, .16), transparent 70%);
+  }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 56px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--mint);
+    background: var(--mint-soft); border: 1px solid var(--mint-line); border-radius: 999px; padding: 5px 12px;
+  }
+  h1 { font-size: clamp(38px, 5.4vw, 60px); line-height: 1.05; letter-spacing: -.035em; margin: 20px 0 18px; font-weight: 800; }
+  h1 em { font-style: normal; color: var(--mint); }
+  .lead { font-size: 18px; color: var(--label); margin: 0 0 30px; max-width: 520px; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .fine { margin-top: 14px; font-size: 14px; color: var(--dim); }
+
+  /* Menu mock: the real Donut menu, drawn in HTML */
+  .mock {
+    display: grid; grid-template-columns: 150px minmax(0, 1fr); min-height: 380px;
+    background: rgba(7, 17, 18, .96); border: 1px solid var(--edge-hover); border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 0 1px rgba(91, 227, 200, .06);
+    overflow: hidden; font-size: 13px;
+  }
+  .mock-side { background: var(--sidebar); border-right: 1px solid var(--edge); padding: 16px 10px; }
+  .mock-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; padding: 0 8px 14px; }
+  .mock-logo svg { width: 18px; height: 18px; }
+  .mock-group { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); padding: 10px 8px 4px; }
+  .mock-item { padding: 6px 8px; border-radius: 7px; color: var(--muted); }
+  .mock-item.on { background: var(--mint-soft); color: var(--mint); font-weight: 600; box-shadow: inset 2px 0 0 var(--mint); }
+  .mock-main { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .mock-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .mock-head b { font-size: 16px; }
+  .mock-search { background: var(--field); border: 1px solid var(--edge); border-radius: 8px; padding: 5px 10px; color: var(--dim); font-size: 12px; }
+  .mod {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card); border: 1px solid var(--edge); border-radius: 10px; padding: 9px 12px;
+  }
+  .mod:hover { background: var(--card-hover); border-color: var(--edge-hover); }
+  .mod div { flex: 1; min-width: 0; }
+  .mod b { display: block; font-size: 13px; }
+  .mod span { display: block; color: var(--dim); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sw { width: 30px; height: 17px; border-radius: 99px; background: var(--track); position: relative; flex: none; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: var(--muted); }
+  .sw.on { background: var(--mint); }
+  .sw.on::after { left: 15px; background: #04201b; }
+
+  /* Sections */
+  section { padding: 84px 0; }
+  .alt { background: linear-gradient(180deg, transparent, rgba(12, 26, 27, .65) 12%, rgba(12, 26, 27, .65) 88%, transparent); }
+  .kicker { color: var(--mint); font-weight: 700; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: clamp(30px, 3.6vw, 42px); line-height: 1.12; letter-spacing: -.03em; margin: 0 0 14px; font-weight: 800; }
+  .sub { color: var(--label); font-size: 17px; max-width: 640px; margin: 0 0 44px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--edge); border-radius: var(--radius); padding: 22px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .card:hover { border-color: var(--edge-hover); background: var(--card-hover); }
+  .card h3 { margin: 14px 0 6px; font-size: 17px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .card code { font: 600 13px/1 ui-monospace, Consolas, monospace; color: var(--label); background: var(--field); border: 1px solid var(--edge); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
+  .ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--mint-soft); border: 1px solid var(--mint-line); }
+  .ico svg { width: 21px; height: 21px; stroke: var(--mint); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .wide { grid-column: span 2; }
+
+  .bot { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: start; }
+  .bot-list { display: grid; gap: 12px; }
+  .row { display: flex; gap: 16px; background: var(--card); border: 1px solid var(--edge); border-radius: var(--radius); padding: 18px 20px; }
+  .row .ico { flex: none; }
+  .row h3 { margin: 0 0 4px; font-size: 16px; }
+  .row p { margin: 0; color: var(--muted); font-size: 15px; }
+  .note {
+    margin-top: 26px; padding: 16px 18px; border-radius: 12px; font-size: 14.5px; color: var(--label);
+    background: rgba(242, 179, 94, .08); border: 1px solid rgba(242, 179, 94, .3);
+  }
+  .note b { color: var(--warn); }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: step; }
+  .step { position: relative; padding: 22px; border-radius: var(--radius); border: 1px solid var(--edge); background: var(--card); }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--mint); color: #04201b; font-weight: 800; margin-bottom: 14px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 16px; }
+  .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  kbd { font: 600 12.5px/1 ui-monospace, Consolas, monospace; background: var(--field); border: 1px solid var(--edge-hover); border-bottom-width: 2px; padding: 2px 6px; border-radius: 6px; color: var(--text); }
+
+  /* Pricing */
+  .pricing { display: grid; grid-template-columns: 1.05fr .95fr; gap: 24px; align-items: stretch; }
+  .price-card {
+    position: relative; border-radius: 20px; padding: 34px;
+    background: linear-gradient(160deg, rgba(91, 227, 200, .14), rgba(12, 26, 27, .9) 45%);
+    border: 1px solid var(--mint-line);
+    box-shadow: 0 0 0 1px rgba(91, 227, 200, .05), 0 24px 60px rgba(0, 0, 0, .4);
+  }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #04201b; background: var(--mint); border-radius: 999px; padding: 4px 10px; }
+  .price { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 4px; }
+  .price strong { font-size: 64px; line-height: 1; letter-spacing: -.04em; font-weight: 800; }
+  .price span { color: var(--muted); font-size: 17px; }
+  .per { color: var(--label); margin: 0 0 24px; }
+  .checks { list-style: none; padding: 0; margin: 0 0 28px; display: grid; gap: 10px; }
+  .checks li { display: flex; gap: 10px; color: var(--label); }
+  .checks li::before {
+    content: ""; flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%;
+    background: var(--mint-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 10.5l2.6 2.5L14 7.5' fill='none' stroke='%235BE3C8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/20px no-repeat;
+    border: 1px solid var(--mint-line);
+  }
+  .price-card .btn { width: 100%; height: 54px; font-size: 17px; }
+  .soon { display: none; margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--muted); }
+  .no-checkout .soon { display: block; }
+  .req { border-radius: 20px; padding: 30px; background: var(--card); border: 1px solid var(--edge); }
+  .req h3 { margin: 0 0 16px; font-size: 18px; }
+  .req dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 12px 18px; font-size: 15px; }
+  .req dt { color: var(--muted); }
+  .req dd { margin: 0; color: var(--text); font-weight: 600; }
+  .req p { margin: 22px 0 0; color: var(--muted); font-size: 14.5px; }
+
+  /* FAQ */
+  .faq { display: grid; gap: 10px; max-width: 820px; }
+  details { background: var(--card); border: 1px solid var(--edge); border-radius: 12px; padding: 0 20px; }
+  details[open] { border-color: var(--edge-hover); }
+  summary {
+    list-style: none; cursor: pointer; padding: 17px 0; font-weight: 600; font-size: 16px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--mint); font-size: 22px; font-weight: 400; line-height: 1; transition: transform .2s ease; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { margin: 0 0 18px; color: var(--muted); }
+
+  .final { text-align: center; }
+  .final .sub { margin-left: auto; margin-right: auto; }
+  .final .cta { justify-content: center; }
+
+  footer { border-top: 1px solid var(--edge); padding: 34px 0 44px; color: var(--dim); font-size: 13.5px; }
+  footer .wrap { display: grid; gap: 8px; }
+  footer .brand { color: var(--label); font-size: 15px; margin-bottom: 6px; }
+
+  @media (max-width: 960px) {
+    .hero .wrap, .bot, .pricing { grid-template-columns: minmax(0, 1fr); }
+    .hero { padding-top: 56px; }
+    .grid, .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .links { display: none; }
+    nav .btn { margin-left: auto; }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 16px; }
+    section { padding: 60px 0; }
+    .grid, .steps { grid-template-columns: minmax(0, 1fr); }
+    .card code { white-space: normal; }
+    .wide { grid-column: auto; }
+    .mock { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    .mock-side { display: none; }
+    .price-card, .req { padding: 24px; }
+    .cta .btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="donut" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="11" fill="none" stroke="#5BE3C8" stroke-width="8"/>
+    <circle cx="16" cy="16" r="11" fill="none" stroke="#071112" stroke-width="1.6" stroke-dasharray="1.5 5.4" opacity=".55"/>
+  </symbol>
+</svg>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><svg><use href="#donut"/></svg>Donut Client</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#bot">Trading bot</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="btn btn-mint btn-sm" href="#pricing" data-checkout>Buy a key</a>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">DonutSMP · Minecraft Java 26.2 · Fabric</span>
+        <h1>See what's hidden.<br><em>Let the bot trade.</em></h1>
+        <p class="lead">Donut Client finds bases, ancient debris, spawners and dug tunnels, and carries the GoNuts auction bot inside, which prices every item from what it really sold for. One key, two months, $10.</p>
+        <div class="cta">
+          <a class="btn btn-mint" href="#pricing" data-checkout>Buy a key · $10</a>
+          <a class="btn btn-ghost" href="#features">See what's inside</a>
+        </div>
+        <p class="fine">One payment. No subscription, nothing renews by itself.</p>
+      </div>
+
+      <div class="mock" role="img" aria-label="The Donut Client menu, with the Finders page open">
+        <div class="mock-side">
+          <div class="mock-logo"><svg><use href="#donut"/></svg>Donut</div>
+          <div class="mock-group">Modules</div>
+          <div class="mock-item on">Finders</div>
+          <div class="mock-item">Render</div>
+          <div class="mock-item">Utility</div>
+          <div class="mock-item">HUD</div>
+          <div class="mock-group">GoNuts</div>
+          <div class="mock-item">Overview</div>
+          <div class="mock-item">Settings</div>
+          <div class="mock-group">Menu</div>
+          <div class="mock-item">Keybinds</div>
+          <div class="mock-item">Theme</div>
+        </div>
+        <div class="mock-main">
+          <div class="mock-head"><b>Finders</b><span class="mock-search">Type to search</span></div>
+          <div class="mod"><div><b>BaseFinder</b><span>Marks chunks that look like someone's base</span></div><i class="sw on"></i></div>
+          <div class="mod"><div><b>DebrisFinder</b><span>Ancient debris, with anti-xray fakes filtered out</span></div><i class="sw on"></i></div>
+          <div class="mod"><div><b>StorageFinder</b><span>Chests, shulkers, barrels, hoppers and more</span></div><i class="sw on"></i></div>
+          <div class="mod"><div><b>SpawnerFinder</b><span>Spawners a player has been near</span></div><i class="sw"></i></div>
+          <div class="mod"><div><b>TunnelFinder</b><span>1x2 tunnels, holes and staircases players dug</span></div><i class="sw on"></i></div>
+          <div class="mod"><div><b>EntityFinder</b><span>Players by name through walls, with tracers</span></div><i class="sw"></i></div>
+          <div class="mod"><div><b>ActivityFinder</b><span>Grown amethyst: someone spent hours here</span></div><i class="sw"></i></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <p class="kicker">Finders</p>
+      <h2>Find the bases other players can't.</h2>
+      <p class="sub">Every finder reads the chunks your client already holds, draws boxes and tracers to what it finds, and lists the nearest find with its distance and an arrow in the info panel.</p>
+      <div class="grid">
+        <div class="card wide">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/></svg></div>
+          <h3>BaseFinder</h3>
+          <p>Scores each chunk on what worldgen never places: shulker boxes, beacons, ender chests, signs, redstone, concrete, rooms full of chests. Villages, ancient cities and trial chambers stay below the bar, so a mark like <code>Base? 10: shulker box, 2 signs</code> means a player built there.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 8v8l8 5 8-5V8z"/><path d="m4 8 8 5 8-5M12 13v8"/></svg></div>
+          <h3>DebrisFinder</h3>
+          <p>Reads ancient debris straight from loaded chunks, sorts out anti-xray fakes, and lights up real debris with a sound the moment mining reveals it.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 12h18M10 12v3h4v-3M7 7V4h10v3"/></svg></div>
+          <h3>StorageFinder</h3>
+          <p>Chests, trapped and ender chests, shulker boxes, barrels, hoppers, furnaces and storage minecarts.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9.5h16M4 14.5h16M9.5 4v16M14.5 4v16"/></svg></div>
+          <h3>SpawnerFinder</h3>
+          <p>An untouched spawner's timer never moves, so it marks only the spawners a player has already been near.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 20V9a8 8 0 0 1 16 0v11"/><path d="M9 20v-8a3 3 0 0 1 6 0v8"/></svg></div>
+          <h3>TunnelFinder</h3>
+          <p>Straight 1x2 tunnels, 1x1 holes and staircases that players dug. Anti-xray can't hide air, so it works on any server.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+          <h3>EntityFinder</h3>
+          <p>Outlines players with their names through walls, and optionally mobs and dropped items.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2 7 9l5 13 5-13z"/><path d="M7 9h10"/></svg></div>
+          <h3>ActivityFinder</h3>
+          <p>Amethyst only grows while a player is nearby, so a grown geode means someone spent hours close to it.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div>
+          <h3>Auto RTP</h3>
+          <p>Teleports, lets ActivityFinder scan, and stops with a sound once an area shows real activity.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <p class="kicker">Vision</p>
+      <h2>See through the world.</h2>
+      <p class="sub">The rest of the toolkit, each on its own key.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>X-ray</h3>
+          <p>Hides stone, deepslate, dirt, Nether terrain and water so ores, chests and builds stand out. "Only exposed ores" removes anti-xray's fake ores.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+          <h3>Fullbright</h3>
+          <p>Every block fully lit, with distance, water, lava, blindness and darkness fog gone.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          <h3>Freecam</h3>
+          <p>Fly the camera anywhere while you stay put, and drop out of it as soon as you get hurt.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 12h18M12 3l9 9-9 9"/></svg></div>
+          <h3>Tracers and labels</h3>
+          <p>Lines from your crosshair to every find, with on-screen distance labels for the nearest ones.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></div>
+          <h3>Info HUD</h3>
+          <p>Each finder's count and nearest find with an arrow, plus a list of the modules you have on.</p>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></div>
+          <h3>Clean menu</h3>
+          <p><kbd>Right Shift</kbd> opens it. Type to search, set a key per module, and pick your accent color.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="bot">
+    <div class="wrap bot">
+      <div>
+        <p class="kicker">Trading bot</p>
+        <h2>GoNuts trades the auction house for you.</h2>
+        <p class="sub">GoNuts is built in. It learns prices from completed sales instead of asking prices, hunts flips, buys, relists, and books a sale only once it can prove it happened.</p>
+        <div class="note"><b>Off until you say so.</b> GoNuts starts in observe mode and never trades until you turn live trading on and start a session. Settings that move money are marked in amber and need a second click.</div>
+      </div>
+      <div class="bot-list">
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/></svg></div>
+          <div><h3>Prices from real sales</h3><p>Recency-weighted prices with outlier filtering and manipulation checks, so a rigged listing doesn't fool it.</p></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div>
+          <div><h3>Both sides of the market</h3><p>Ranks resale flips across dozens of markets and reads the order house too.</p></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+          <div><h3>Safety gates</h3><p>Spend caps, dry run, wind down (sell what it holds, then stop) and an emergency stop on <kbd>End</kbd>.</p></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <div><h3>Loadouts in one click</h3><p>Apply a tested set of settings, like the recommended Veno loadout, and see exactly how many changed.</p></div>
+        </div>
+        <div class="row">
+          <div class="ico"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+          <div><h3>Web panel for your phone</h3><p>Start, stop and watch your profit from a browser on your own Wi-Fi, behind a PIN.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <p class="kicker">How it works</p>
+      <h2>From checkout to in-game in minutes.</h2>
+      <p class="sub">No launcher to install. Donut Client is a single Fabric mod.</p>
+      <div class="steps">
+        <div class="step"><h3>Buy a key</h3><p>Pay $10 at checkout.</p></div>
+        <div class="step"><h3>Check your email</h3><p>Your key and the download arrive right after payment.</p></div>
+        <div class="step"><h3>Install</h3><p>Drop the jar into your <code style="font-size:12.5px">mods</code> folder next to Fabric API and start Minecraft.</p></div>
+        <div class="step"><h3>Play</h3><p>Enter your key, press <kbd>Right Shift</kbd>, and switch on what you need.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <p class="kicker">Pricing</p>
+      <h2>One price. Everything included.</h2>
+      <p class="sub">No tiers and no locked modules. A key unlocks the whole client and the bot for two months.</p>
+      <div class="pricing">
+        <div class="price-card">
+          <span class="tag">2-month key</span>
+          <div class="price"><strong>$10</strong><span>USD, one payment</span></div>
+          <p class="per">That's $5 a month, and it never renews by itself.</p>
+          <ul class="checks">
+            <li>Every finder, X-ray, Fullbright and Freecam</li>
+            <li>The GoNuts trading bot, loadouts and web panel</li>
+            <li>Every update released while your key runs</li>
+            <li>Key and download by email right after payment</li>
+          </ul>
+          <a class="btn btn-mint" href="#pricing" data-checkout data-main>Buy a key · $10</a>
+          <p class="soon">Checkout opens soon.</p>
+        </div>
+        <div class="req">
+          <h3>What you need</h3>
+          <dl>
+            <dt>Game</dt><dd>Minecraft Java 26.2</dd>
+            <dt>Loader</dt><dd>Fabric Loader 0.19.5+</dd>
+            <dt>Library</dt><dd>Fabric API 0.158.0+</dd>
+            <dt>Java</dt><dd>Java 25</dd>
+          </dl>
+          <p>When your two months are up, the client asks for a new key. Your settings, keybinds and the bot's price history stay on your PC.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="alt">
+    <div class="wrap">
+      <p class="kicker">FAQ</p>
+      <h2>Questions</h2>
+      <div class="faq">
+        <details>
+          <summary>How long does a key last?</summary>
+          <p>Two months from the day you buy it. It doesn't renew by itself: when it runs out, buy a new key to keep going.</p>
+        </details>
+        <details>
+          <summary>Can I get banned?</summary>
+          <p>Yes, it's possible. DonutSMP's rules ban scripts and macros, and a ban can reach every account linked to a player. GoNuts stays off until you start it and has spend caps and an emergency stop, but using the client and the bot is a risk you choose to take.</p>
+        </details>
+        <details>
+          <summary>Do I need GoNuts separately?</summary>
+          <p>No, GoNuts is already inside Donut Client. Remove any separate GoNuts (doughbay) jar from your mods folder, or Fabric won't start.</p>
+        </details>
+        <details>
+          <summary>Does it work with Sodium?</summary>
+          <p>X-ray changes how chunks are drawn and needs Minecraft's own renderer, so it doesn't work with Sodium.</p>
+        </details>
+        <details>
+          <summary>Can the finders see everything on the server?</summary>
+          <p>They see what the server sends to your client: loaded chunks around you and the entities in them. Nothing reaches past that.</p>
+        </details>
+        <details>
+          <summary>Which Minecraft versions are supported?</summary>
+          <p>Minecraft Java 26.2 with Fabric.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Ready when you are.</h2>
+      <p class="sub">Two months of the whole client and the bot, for $10.</p>
+      <div class="cta">
+        <a class="btn btn-mint" href="#pricing" data-checkout>Buy a key · $10</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="brand"><svg width="20" height="20"><use href="#donut"/></svg>Donut Client</span>
+    <span>Not affiliated with DonutSMP. Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</span>
+    <span>Includes GoNuts by cody-raves, used under the MIT license.</span>
+  </div>
+</footer>
+
+<script>
+  // Paste the checkout link here (for example a Lemon Squeezy buy link) to open sales.
+  // While it's empty, every buy button scrolls to the pricing card, which says checkout opens soon.
+  const CHECKOUT_URL = "";
+
+  if (CHECKOUT_URL) {
+    document.querySelectorAll("[data-checkout]").forEach(function (a) {
+      a.href = CHECKOUT_URL;
+      a.rel = "noopener";
+    });
+  } else {
+    document.body.classList.add("no-checkout");
+    var main = document.querySelector("[data-main]");
+    main.setAttribute("aria-disabled", "true");
+    main.textContent = "Checkout opens soon";
+    main.addEventListener("click", function (e) { e.preventDefault(); });
+    document.querySelector(".soon").textContent = "Sales open as soon as checkout is live.";
+  }
+</script>
+</body>
+</html>
